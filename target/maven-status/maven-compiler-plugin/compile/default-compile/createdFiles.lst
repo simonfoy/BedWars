@@ -1,0 +1,10 @@
+me\simonfoy\bedwars\instance\BedWarsGame.class
+me\simonfoy\bedwars\instance\Countdown.class
+me\simonfoy\bedwars\instance\Game.class
+me\simonfoy\bedwars\listener\ConnectListener.class
+me\simonfoy\bedwars\instance\GameListener.class
+me\simonfoy\bedwars\instance\Game$1.class
+me\simonfoy\bedwars\BedWars.class
+me\simonfoy\bedwars\instance\GameTimer.class
+me\simonfoy\bedwars\GameState.class
+me\simonfoy\bedwars\manager\ScoreboardManager.class
