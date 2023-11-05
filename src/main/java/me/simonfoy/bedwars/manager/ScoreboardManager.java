@@ -97,7 +97,7 @@ public class ScoreboardManager {
         Score space3 = objective.getScore("   ");
         space3.setScore(5);
 
-        Score mode = objective.getScore(ChatColor.WHITE + "Mode: " + ChatColor.GREEN + "Bed Wars");
+        Score mode = objective.getScore(ChatColor.WHITE + "Mode: " + ChatColor.GREEN + "Solo");
         mode.setScore(4);
 
         Score version = objective.getScore(ChatColor.WHITE + "Version: " + ChatColor.GRAY + "v1.0");

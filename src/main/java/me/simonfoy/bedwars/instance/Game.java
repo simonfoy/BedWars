@@ -19,6 +19,7 @@ public class Game {
     private BedWars bedWars;
     private Location hub;
     private Location spawn;
+    private HashMap<Team, Location> spawns;
     private GameState state;
     private List<UUID> players;
     private int requiredPlayers;
@@ -31,6 +32,7 @@ public class Game {
         this.bedWars = bedWars;
         this.hub = new Location(Bukkit.getWorld("world"), 0, 70, 0);
         this.spawn = new Location(Bukkit.getWorld("world"), 0, 250, 0);
+        this.spawns = new HashMap<>();
         this.state = GameState.PREPARING;
         this.players = new ArrayList<>();
         this.requiredPlayers = 1;
@@ -178,6 +180,7 @@ public class Game {
     }
 
     public Location getSpawn() { return spawn; }
+    public HashMap<Team, Location> getSpawns() { return spawns; }
     public GameState getState() { return state; }
     public List<UUID> getPlayers() { return players; }
     public int getRequiredPlayers() { return requiredPlayers; }
