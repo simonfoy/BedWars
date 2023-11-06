@@ -5,6 +5,7 @@ import me.simonfoy.bedwars.GameState;
 import me.simonfoy.bedwars.manager.ScoreboardManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -144,6 +145,9 @@ public class Game {
 
     public void addPlayer(Player player) {
         players.add(player.getUniqueId());
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setHealth(20);
+        player.setFoodLevel(20);
         player.teleport(spawn);
         player.closeInventory();
         player.getInventory().clear();
