@@ -8,6 +8,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
@@ -50,15 +51,13 @@ public class BedWarsGame extends GameListener {
     }
 
     @EventHandler
-    public void onPlayerDrop(PlayerDropItemEvent event) {
+    public void onPlayerDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
 
-        ItemStack droppedItem = event.getItemDrop().getItemStack();
-
-        if (game != null && game.getState().equals(GameState.IN_PROGRESS)) {
-            if (droppedItem.getType() == Material.STICK) {
-                endBedWarsGame();
-                event.getPlayer().sendMessage("You dropped a stick! BedWars Game over.");
-            }
+        if (!game.getState().equals(GameState.IN_PROGRESS)) {
+            event.setCancelled(true);
         }
     }
 }
