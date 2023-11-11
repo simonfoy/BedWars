@@ -13,6 +13,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 public class BedWarsGame extends GameListener {
@@ -42,6 +43,14 @@ public class BedWarsGame extends GameListener {
             Bukkit.getPlayer(player.getUniqueId()).teleport(game.getSpawn());
             Bukkit.getPlayer(player.getUniqueId()).setGameMode(GameMode.SURVIVAL);
         }
+
+        for (int i = 0; i < game.getPlayers().size(); i++) {
+            UUID uuid = game.getPlayers().get(i);
+            Team team = Team.values()[i];
+            game.getTeams().put(uuid, team);
+            Bukkit.getPlayer(uuid).teleport(game.getSpawnManager().getSpawn(team));
+        }
+
         Bukkit.getWorld("world").setTime(1000);
         game.getGameTimer().start();
     }

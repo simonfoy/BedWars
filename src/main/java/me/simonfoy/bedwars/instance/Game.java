@@ -3,6 +3,7 @@ package me.simonfoy.bedwars.instance;
 import me.simonfoy.bedwars.BedWars;
 import me.simonfoy.bedwars.GameState;
 import me.simonfoy.bedwars.manager.ScoreboardManager;
+import me.simonfoy.bedwars.manager.SpawnManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -20,26 +21,28 @@ public class Game {
     private BedWars bedWars;
     private Location hub;
     private Location spawn;
-    private HashMap<Team, Location> spawns;
     private GameState state;
     private List<UUID> players;
     private int requiredPlayers;
     private Countdown countdown;
     private GameTimer gameTimer;
     private BedWarsGame bedWarsGame;
+    private HashMap<UUID, Team> teams;
+    private SpawnManager spawnManager;
     private ScoreboardManager scoreBoardManager;
 
     public Game(BedWars bedWars) {
         this.bedWars = bedWars;
         this.hub = new Location(Bukkit.getWorld("world"), 0, 70, 0);
         this.spawn = new Location(Bukkit.getWorld("world"), 0, 250, 0);
-        this.spawns = new HashMap<>();
         this.state = GameState.PREPARING;
         this.players = new ArrayList<>();
-        this.requiredPlayers = 1;
+        this.requiredPlayers = 8;
         this.countdown = new Countdown(bedWars, this);
         this.gameTimer = new GameTimer(bedWars, this);
         this.bedWarsGame = new BedWarsGame(bedWars, this);
+        this.teams = new HashMap<>();
+        this.spawnManager = new SpawnManager(bedWars);
         this.scoreBoardManager = new ScoreboardManager(bedWars);
     }
 
@@ -184,13 +187,14 @@ public class Game {
     }
 
     public Location getSpawn() { return spawn; }
-    public HashMap<Team, Location> getSpawns() { return spawns; }
     public GameState getState() { return state; }
     public List<UUID> getPlayers() { return players; }
     public int getRequiredPlayers() { return requiredPlayers; }
     public BedWarsGame getBedWarsGame() { return bedWarsGame; }
     public Countdown getCountdown() { return countdown; }
     public GameTimer getGameTimer() { return gameTimer; }
+    public HashMap<UUID, Team> getTeams() { return teams; }
+    public SpawnManager getSpawnManager() { return spawnManager; }
     public ScoreboardManager getScoreBoardManager() { return scoreBoardManager; }
     public void setState(GameState state) { this.state = state; }
 

@@ -1,5 +1,6 @@
 package me.simonfoy.bedwars;
 
+import me.simonfoy.bedwars.commands.GameCommand;
 import me.simonfoy.bedwars.instance.Game;
 import me.simonfoy.bedwars.listener.ConnectListener;
 import org.bukkit.Bukkit;
@@ -11,7 +12,11 @@ public final class BedWars extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
+
         game = new Game(this);
+
+        getCommand("game").setExecutor(new GameCommand(this, game));
 
         Bukkit.getPluginManager().registerEvents(new ConnectListener(this), this);
 

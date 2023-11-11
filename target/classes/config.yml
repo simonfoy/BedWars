@@ -1,0 +1,9 @@
+spawns:
+  RED: world,50.5,56,138.5
+  BLUE: world,-47.5,56,138.5
+  GREEN: world,135.5,56,52.5
+  YELLOW: world,-135.5,56,-45.5
+  AQUA: world,-49.5,56,-133.5
+  PINK: world,48.5,56,-133.5
+  WHITE: world,136.5,56,-47.5
+  GRAY: world,136.5,56,50.5
