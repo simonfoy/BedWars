@@ -1,6 +1,8 @@
 me\simonfoy\bedwars\commands\GameCommand.class
 me\simonfoy\bedwars\listener\ConnectListener.class
 me\simonfoy\bedwars\BedWars.class
+me\simonfoy\bedwars\instance\BedWarsGame$1.class
+me\simonfoy\bedwars\instance\BedLocation.class
 me\simonfoy\bedwars\manager\ScoreboardManager.class
 me\simonfoy\bedwars\instance\Team.class
 me\simonfoy\bedwars\instance\BedWarsGame.class

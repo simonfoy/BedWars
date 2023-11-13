@@ -168,6 +168,26 @@ public class ScoreboardManager {
         }
     }
 
+    public void updatePlayerCounter() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Scoreboard scoreboard = player.getScoreboard();
+            Objective objective = scoreboard.getObjective("Preparing_BedWars");
+
+            if (objective == null) {
+                continue; //
+            }
+
+            int playerCounter = bedWars.getGame().getPlayers().size();
+
+
+            Team aliveTeam = objective.getScoreboard().getTeam("playerCount");
+            if (aliveTeam != null) {
+                aliveTeam.setPrefix(ChatColor.WHITE + "Players: ");
+                aliveTeam.setSuffix(ChatColor.GREEN + "" + playerCounter + "/" + bedWars.getGame().getRequiredPlayers());
+            }
+        }
+    }
+
     public void updateGameTimer() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Scoreboard scoreboard = player.getScoreboard();

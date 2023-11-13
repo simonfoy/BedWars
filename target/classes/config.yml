@@ -1,9 +1,19 @@
-spawns:
-  RED: world,50.5,56,138.5
-  BLUE: world,-47.5,56,138.5
-  GREEN: world,135.5,56,52.5
-  YELLOW: world,-135.5,56,-45.5
-  AQUA: world,-49.5,56,-133.5
-  PINK: world,48.5,56,-133.5
-  WHITE: world,136.5,56,-47.5
-  GRAY: world,136.5,56,50.5
+playerSpawns:
+  RED: world,50.5,56,138.5,-180,0
+  BLUE: world,-47.5,56,138.5,-180,0
+  GREEN: world,136.5,56,50.5,90,0
+  YELLOW: world,-135.5,56,-45.5,-90,0
+  CYAN: world,-49.5,56,-133.5,0,0
+  PINK: world,48.5,56,-133.5,0,0
+  WHITE: world,136.5,56,-47.5,90,0
+  GRAY: world,136.5,56,50.5,90,0
+
+bedSpawns:
+  RED: world,49.5,54,124.5,south
+  BLUE: world,-46.5,54,124.5,south
+  GREEN: world,122.5,54,49.5,west
+  YELLOW: world,-121.5,54,-44.5,west
+  CYAN: world,-48.5,54,-119.5,north
+  PINK: world,47.5,54,-119.5,north
+  WHITE: world,122.5,54,-46.5,east
+  GRAY: world,122.5,54,49.5,east

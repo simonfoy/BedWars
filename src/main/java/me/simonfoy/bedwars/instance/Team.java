@@ -6,7 +6,7 @@ public enum Team {
     BLUE("Blue"),
     GREEN("Green"),
     YELLOW("Yellow"),
-    AQUA("Aqua"),
+    CYAN("Cyan"),
     PINK("Pink"),
     WHITE("White"),
     GRAY("Gray");

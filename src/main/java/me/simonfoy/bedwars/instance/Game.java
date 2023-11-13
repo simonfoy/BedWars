@@ -4,10 +4,8 @@ import me.simonfoy.bedwars.BedWars;
 import me.simonfoy.bedwars.GameState;
 import me.simonfoy.bedwars.manager.ScoreboardManager;
 import me.simonfoy.bedwars.manager.SpawnManager;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
+import org.bukkit.*;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -29,6 +27,7 @@ public class Game {
     private BedWarsGame bedWarsGame;
     private HashMap<UUID, Team> teams;
     private SpawnManager spawnManager;
+    private HashMap<Team, BedLocation> beds;
     private ScoreboardManager scoreBoardManager;
 
     public Game(BedWars bedWars) {
@@ -43,6 +42,7 @@ public class Game {
         this.bedWarsGame = new BedWarsGame(bedWars, this);
         this.teams = new HashMap<>();
         this.spawnManager = new SpawnManager(bedWars);
+        this.beds = new HashMap<>();
         this.scoreBoardManager = new ScoreboardManager(bedWars);
     }
 
@@ -157,6 +157,10 @@ public class Game {
         getScoreBoardManager().clearScoreboard(player);
         getScoreBoardManager().setupGamePreparingScoreboard(player);
 
+        for (Player players : Bukkit.getOnlinePlayers()) {
+            getScoreBoardManager().updatePlayerCounter();
+        }
+
         if (state.equals(GameState.PREPARING) && players.size() == requiredPlayers) {
             for (Player players : Bukkit.getOnlinePlayers()) {
                 getScoreBoardManager().clearScoreboard(players);
@@ -172,6 +176,11 @@ public class Game {
         player.teleport(hub);
         getScoreBoardManager().clearScoreboard(player);
         player.sendTitle("", "");
+        if (state == GameState.PREPARING) {
+            for (Player players : Bukkit.getOnlinePlayers()) {
+                getScoreBoardManager().updatePlayerCounter();
+            }
+        }
 
 
         if (state == GameState.PRE_START && players.size() < requiredPlayers) {
@@ -195,6 +204,7 @@ public class Game {
     public GameTimer getGameTimer() { return gameTimer; }
     public HashMap<UUID, Team> getTeams() { return teams; }
     public SpawnManager getSpawnManager() { return spawnManager; }
+    public HashMap<Team, BedLocation> getBeds() { return beds; }
     public ScoreboardManager getScoreBoardManager() { return scoreBoardManager; }
     public void setState(GameState state) { this.state = state; }
 
