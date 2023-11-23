@@ -17,3 +17,5 @@ bedSpawns:
   PINK: world,47.5,54,-119.5,north
   WHITE: world,122.5,54,-46.5,east
   GRAY: world,122.5,54,49.5,east
+
+y-respawn: 0

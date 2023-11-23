@@ -8,6 +8,7 @@ import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +27,9 @@ public class Game {
     private GameTimer gameTimer;
     private BedWarsGame bedWarsGame;
     private HashMap<UUID, Team> teams;
+    private List<BukkitTask> tasks;
+    private HashMap<Team, Boolean> bedsAlive;
+    private List<UUID> alive;
     private SpawnManager spawnManager;
     private HashMap<Team, BedLocation> beds;
     private ScoreboardManager scoreBoardManager;
@@ -41,6 +45,9 @@ public class Game {
         this.gameTimer = new GameTimer(bedWars, this);
         this.bedWarsGame = new BedWarsGame(bedWars, this);
         this.teams = new HashMap<>();
+        this.tasks = new ArrayList<>();
+        this.bedsAlive = new HashMap<>();
+        this.alive = new ArrayList<>();
         this.spawnManager = new SpawnManager(bedWars);
         this.beds = new HashMap<>();
         this.scoreBoardManager = new ScoreboardManager(bedWars);
@@ -107,6 +114,7 @@ public class Game {
             gameTimer.stop();
         }
 
+        cancelTasks();
         countdown = new Countdown(bedWars, this);
         gameTimer = new GameTimer(bedWars, this);
         bedWarsGame = new BedWarsGame(bedWars, this);
@@ -141,6 +149,12 @@ public class Game {
     public void sendTitle(String title, String subtitle) {
         for (UUID uuid : players) {
             Bukkit.getPlayer(uuid).sendTitle(title, subtitle);
+        }
+    }
+
+    public void cancelTasks() {
+        for (BukkitTask task : tasks) {
+            task.cancel();
         }
     }
 
@@ -203,6 +217,9 @@ public class Game {
     public Countdown getCountdown() { return countdown; }
     public GameTimer getGameTimer() { return gameTimer; }
     public HashMap<UUID, Team> getTeams() { return teams; }
+    public List<BukkitTask> getTasks() { return tasks; }
+    public HashMap<Team, Boolean> getBedsAlive() { return bedsAlive; }
+    public List<UUID> getAlive() { return alive; }
     public SpawnManager getSpawnManager() { return spawnManager; }
     public HashMap<Team, BedLocation> getBeds() { return beds; }
     public ScoreboardManager getScoreBoardManager() { return scoreBoardManager; }

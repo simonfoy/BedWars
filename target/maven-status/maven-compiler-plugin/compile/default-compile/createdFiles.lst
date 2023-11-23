@@ -1,4 +1,5 @@
 me\simonfoy\bedwars\commands\GameCommand.class
+me\simonfoy\bedwars\instance\BedWarsGame$2.class
 me\simonfoy\bedwars\listener\ConnectListener.class
 me\simonfoy\bedwars\BedWars.class
 me\simonfoy\bedwars\instance\BedWarsGame$1.class

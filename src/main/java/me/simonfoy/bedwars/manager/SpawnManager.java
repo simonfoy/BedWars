@@ -16,12 +16,14 @@ public class SpawnManager {
 
     private HashMap<Team, Location> teamSpawns;
     private HashMap<Team, BedLocation> bedSpawns;
+    private int yRespawn;
     private BedWars bedWars;
 
     public SpawnManager(BedWars bedWars) {
         this.bedWars = bedWars;
         this.teamSpawns = new HashMap<>();
         this.bedSpawns = new HashMap<>();
+        this.yRespawn = 0;
         loadSpawns();
     }
 
@@ -29,6 +31,8 @@ public class SpawnManager {
         FileConfiguration config = bedWars.getConfig();
         loadSpecificSpawns(config, "playerSpawns", teamSpawns);
         loadSpecificSpawns(config, "bedSpawns", bedSpawns);
+
+        this.yRespawn = config.getInt("y-respawn", 0);
     }
 
     private void loadSpecificSpawns(FileConfiguration config, String sectionName, HashMap<Team, ?> spawnMap) {
@@ -83,5 +87,7 @@ public class SpawnManager {
     public BedLocation getBedSpawn(Team team) {
         return bedSpawns.get(team);
     }
+
+    public int getyRespawn() { return yRespawn; }
 
 }
