@@ -14,6 +14,7 @@ public class GameCommand implements CommandExecutor {
 
     private BedWars bedWars;
     private Game game;
+
     public GameCommand(BedWars bedWars, Game game) {
         this.bedWars = bedWars;
         this.game = game;
@@ -41,8 +42,12 @@ public class GameCommand implements CommandExecutor {
                     player.sendMessage(ChatColor.RED + "The game is not in a state that allows it to be started.");
                 }
                 return true;
+            } else if (args[0].equalsIgnoreCase("stop")) {
+                game.reset(true);
+                Bukkit.broadcastMessage(ChatColor.YELLOW + "The game has been stopped by " + player.getName() + ".");
+                return true;
             } else {
-                player.sendMessage(ChatColor.RED + "Usage: /" + label + " start");
+                player.sendMessage(ChatColor.RED + "Usage: /" + label + " [start|stop]");
                 return true;
             }
         }

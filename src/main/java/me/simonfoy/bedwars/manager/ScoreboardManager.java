@@ -8,10 +8,15 @@ import org.bukkit.scoreboard.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class ScoreboardManager {
 
     private BedWars bedWars;
+
+    private Map<me.simonfoy.bedwars.instance.Team, Integer> teamLineNumbers = new HashMap<>();
 
     public ScoreboardManager(BedWars bedWars) {
         this.bedWars = bedWars;
@@ -114,25 +119,41 @@ public class ScoreboardManager {
 
     public void setupGameStartScoreboard(Player player) {
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-        Objective objective = scoreboard.registerNewObjective("Start_BedWars", "dummy",
-                ChatColor.AQUA + "" + ChatColor.BOLD + "Bed Wars");
+        Objective objective = scoreboard.registerNewObjective("Start_BedWars", "dummy", ChatColor.AQUA + "" + ChatColor.BOLD + "Bed Wars");
 
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        int score = 16;
 
         Date today = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
         String formattedDate = formatter.format(today);
         Score date = objective.getScore(ChatColor.GRAY + formattedDate);
-        date.setScore(6);
+        date.setScore(score--);
+
+        Score spaceAfterDate = objective.getScore(" ");
+        spaceAfterDate.setScore(score--);
 
         Team timer = scoreboard.registerNewTeam("timer");
         timer.addEntry(ChatColor.LIGHT_PURPLE.toString());
         timer.setPrefix(ChatColor.WHITE + "Time Left: ");
         timer.setSuffix(ChatColor.GREEN + "2:00");
-        objective.getScore(ChatColor.LIGHT_PURPLE.toString()).setScore(5);
+        objective.getScore(ChatColor.LIGHT_PURPLE.toString()).setScore(score--);
 
-        Score space1 = objective.getScore(" ");
-        space1.setScore(4);
+        Score spaceBeforeTeams = objective.getScore("  ");
+        spaceBeforeTeams.setScore(score--);
+
+        for (me.simonfoy.bedwars.instance.Team team : me.simonfoy.bedwars.instance.Team.values()) {
+            if (teamHasPlayers(team)) {
+                ChatColor teamColor = team.getChatColor();
+                Score teamStatus = objective.getScore(teamColor + team.getName() + ": " + ChatColor.GREEN + "✔");
+                teamStatus.setScore(score--);
+                teamLineNumbers.put(team, score);
+            }
+        }
+
+        Score space4 = objective.getScore("    ");
+        space4.setScore(4);
 
         Score alive = objective.getScore(ChatColor.WHITE + "Players: " + ChatColor.AQUA + bedWars.getGame().getPlayers().size());
         alive.setScore(3);
@@ -209,6 +230,35 @@ public class ScoreboardManager {
                 timerTeam.setSuffix(ChatColor.GREEN + timeFormatted);
             }
         }
+    }
+
+    public void updateScoreboardAfterBedDestruction(me.simonfoy.bedwars.instance.Team bedDestroyedTeam) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            Scoreboard scoreboard = onlinePlayer.getScoreboard();
+            Objective objective = scoreboard.getObjective("Start_BedWars");
+            if (objective == null) {
+                continue;
+            }
+
+            ChatColor teamColor = bedDestroyedTeam.getChatColor();
+            String teamName = bedDestroyedTeam.getName();
+            String oldLine = teamColor + teamName + ": " + ChatColor.GREEN + "✔";
+            String newLine = teamColor + teamName + ": " + ChatColor.RED + "✖";
+
+            scoreboard.resetScores(oldLine);
+
+            Score teamStatus = objective.getScore(newLine);
+            teamStatus.setScore(teamLineNumbers.get(bedDestroyedTeam));
+        }
+    }
+
+    private boolean teamHasPlayers(me.simonfoy.bedwars.instance.Team team) {
+        for (UUID uuid : bedWars.getGame().getTeams().keySet()) {
+            if (bedWars.getGame().getTeams().get(uuid) == team) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void clearScoreboard(Player player) {

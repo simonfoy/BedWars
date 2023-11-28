@@ -16,14 +16,20 @@ public class SpawnManager {
 
     private HashMap<Team, Location> teamSpawns;
     private HashMap<Team, BedLocation> bedSpawns;
-    private int yRespawn;
+    private HashMap<Team, Location> ironGeneratorSpawns;
+    private HashMap<Team, Location> goldGeneratorSpawns;
+    private HashMap<Team, Location> diamondGeneratorSpawns;
+    private HashMap<Team, Location> emeraldGeneratorSpawns;
     private BedWars bedWars;
 
     public SpawnManager(BedWars bedWars) {
         this.bedWars = bedWars;
         this.teamSpawns = new HashMap<>();
         this.bedSpawns = new HashMap<>();
-        this.yRespawn = 0;
+        this.ironGeneratorSpawns = new HashMap<>();
+        this.goldGeneratorSpawns = new HashMap<>();
+        this.diamondGeneratorSpawns = new HashMap<>();
+        this.emeraldGeneratorSpawns = new HashMap<>();
         loadSpawns();
     }
 
@@ -31,8 +37,11 @@ public class SpawnManager {
         FileConfiguration config = bedWars.getConfig();
         loadSpecificSpawns(config, "playerSpawns", teamSpawns);
         loadSpecificSpawns(config, "bedSpawns", bedSpawns);
+        loadSpecificSpawns(config, "ironGeneratorSpawns", ironGeneratorSpawns);
+        loadSpecificSpawns(config, "goldGeneratorSpawns", goldGeneratorSpawns);
+        loadSpecificSpawns(config, "diamondGeneratorSpawns", diamondGeneratorSpawns);
+        loadSpecificSpawns(config, "emeraldGeneratorSpawns", emeraldGeneratorSpawns);
 
-        this.yRespawn = config.getInt("y-respawn", 0);
     }
 
     private void loadSpecificSpawns(FileConfiguration config, String sectionName, HashMap<Team, ?> spawnMap) {
@@ -41,11 +50,11 @@ public class SpawnManager {
             for (String teamName : spawnsSection.getKeys(false)) {
                 String locationString = spawnsSection.getString(teamName);
                 if (sectionName.equals("bedSpawns")) {
-                    BedLocation loc = stringToBedLocation(locationString);
-                    bedSpawns.put(Team.valueOf(teamName.toUpperCase()), loc);
+                    BedLocation bedLocation = stringToBedLocation(locationString);
+                    ((HashMap<Team, BedLocation>) spawnMap).put(Team.valueOf(teamName.toUpperCase()), bedLocation);
                 } else {
                     Location loc = stringToLocation(locationString);
-                    teamSpawns.put(Team.valueOf(teamName.toUpperCase()), loc);
+                    ((HashMap<Team, Location>) spawnMap).put(Team.valueOf(teamName.toUpperCase()), loc);
                 }
             }
         }
@@ -88,6 +97,20 @@ public class SpawnManager {
         return bedSpawns.get(team);
     }
 
-    public int getyRespawn() { return yRespawn; }
+    public Location getIronGeneratorSpawn(Team team) {
+        return ironGeneratorSpawns.get(team);
+    }
+
+    public Location getGoldGeneratorSpawn(Team team) {
+        return goldGeneratorSpawns.get(team);
+    }
+
+    public Location getDiamondGeneratorSpawn(Team team) {
+        return diamondGeneratorSpawns.get(team);
+    }
+
+    public Location getEmeraldGeneratorSpawn(Team team) {
+        return emeraldGeneratorSpawns.get(team);
+    }
 
 }

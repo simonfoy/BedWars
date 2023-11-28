@@ -6,10 +6,13 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.type.Bed;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -23,6 +26,13 @@ import java.util.*;
 public class BedWarsGame extends GameListener {
 
     private BedWars bedWars;
+
+    private Set<Location> bedLocations = new HashSet<>();
+
+    private Map<String, Integer> ironGeneratorTaskIds = new HashMap<>();
+    private Map<String, Integer> goldGeneratorTaskIds = new HashMap<>();
+    private Map<String, Integer> diamondGeneratorTaskIds = new HashMap<>();
+    private Map<String, Integer> emeraldGeneratorTaskIds = new HashMap<>();
 
     public BedWarsGame(BedWars bedWars, Game game) {
         super(bedWars, game);
@@ -49,11 +59,7 @@ public class BedWarsGame extends GameListener {
         HashSet<Team> teamsWithPlayers = new HashSet<>();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.closeInventory();
-            player.setGameMode(GameMode.SURVIVAL);
-            player.getInventory().addItem(new ItemStack(Material.WOODEN_SWORD));
-            player.setHealth(20);
-            player.setFoodLevel(20);
+            onSpawn(player);
         }
 
         List<UUID> shuffledPlayers = new ArrayList<>(game.getPlayers());
@@ -72,6 +78,7 @@ public class BedWarsGame extends GameListener {
 
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
+                onSpawn(player);
                 player.teleport(game.getSpawnManager().getPlayerSpawn(team));
                 player.sendMessage("You are on the " + team.name() + " team!");
             }
@@ -101,15 +108,32 @@ public class BedWarsGame extends GameListener {
             String teamIdentifier = team.name();
             footBlock.setMetadata("teamBed", new FixedMetadataValue(this.bedWars, teamIdentifier));
             headBlock.setMetadata("teamBed", new FixedMetadataValue(this.bedWars, teamIdentifier));
-        }
 
-        game.getTasks().add(Bukkit.getScheduler().runTaskTimer((bedWars), () -> {
-            for (UUID uuid : game.getAlive()) {
-                if (Bukkit.getPlayer(uuid).getLocation().getY() <= game.getSpawnManager().getyRespawn()) {
-                    death(Bukkit.getPlayer(uuid));
+            bedLocations.add(footBlock.getLocation());
+            bedLocations.add(headBlock.getLocation());
+
+            if (teamsWithPlayers.contains(team)) {
+                Location ironGeneratorLocation = game.getSpawnManager().getIronGeneratorSpawn(team);
+                if (ironGeneratorLocation != null) {
+                    startIronGenerator(teamIdentifier, ironGeneratorLocation);
+                }
+
+                Location goldGeneratorLocation = game.getSpawnManager().getGoldGeneratorSpawn(team);
+                if (goldGeneratorLocation != null) {
+                    startGoldGenerator(teamIdentifier, goldGeneratorLocation);
+                }
+
+                Location diamondGeneratorLocation = game.getSpawnManager().getDiamondGeneratorSpawn(team);
+                if (diamondGeneratorLocation != null) {
+                    startDiamondGenerator(teamIdentifier, diamondGeneratorLocation);
+                }
+
+                Location emeraldGeneratorLocation = game.getSpawnManager().getEmeraldGeneratorSpawn(team);
+                if (emeraldGeneratorLocation != null) {
+                    startEmeraldGenerator(teamIdentifier, emeraldGeneratorLocation);
                 }
             }
-        }, 4, 4));
+        }
         Bukkit.getWorld("world").setTime(1000);
         game.getGameTimer().start();
     }
@@ -120,12 +144,20 @@ public class BedWarsGame extends GameListener {
 
     @EventHandler
     public void onPlayerDamage(EntityDamageEvent event) {
+
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
 
         if (!game.getState().equals(GameState.IN_PROGRESS)) {
             event.setCancelled(true);
+            return;
+        }
+
+        if ((((Player) event.getEntity()).getPlayer().getHealth() - event.getFinalDamage()) <= 0) {
+            event.setCancelled(true);
+
+            death(((Player) event.getEntity()).getPlayer());
         }
     }
 
@@ -149,9 +181,169 @@ public class BedWarsGame extends GameListener {
     }
 
     @EventHandler
+    public void onBedPickUp(EntityPickupItemEvent event) {
+        if (game != null && game.getState().equals(GameState.IN_PROGRESS)) {
+            Item item = event.getItem();
+            Material itemType = item.getItemStack().getType();
+
+            if (
+
+                    itemType == Material.RED_BED || itemType == Material.BLUE_BED ||
+                    itemType == Material.GREEN_BED || itemType == Material.YELLOW_BED ||
+                    itemType == Material.CYAN_BED || itemType == Material.PINK_BED ||
+                    itemType == Material.WHITE_BED || itemType == Material.GRAY_BED
+
+            ) {
+
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         if (game != null && game.getState().equals(GameState.IN_PROGRESS)) {
             death(event.getEntity());
+        }
+    }
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        game.getBlocksPlaced().add(event.getBlock().getLocation());
+    }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Location loc = event.getBlock().getLocation();
+
+        if (game.getBlocksPlaced().contains(loc)) {
+            game.getBlocksPlaced().remove(loc);
+        } else {
+            event.setCancelled(true);
+        }
+    }
+
+    private void startIronGenerator(String generatorIdentifier, Location location) {
+        if (ironGeneratorTaskIds.containsKey(generatorIdentifier)) {
+            int taskId = ironGeneratorTaskIds.get(generatorIdentifier);
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+
+        int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(
+                this.bedWars,
+                () -> spawnIronAtGenerator(location),
+                0L,
+                20L * 9
+        );
+        ironGeneratorTaskIds.put(generatorIdentifier, taskId);
+    }
+
+    public void stopIronGenerators() {
+        for (Integer taskId : ironGeneratorTaskIds.values()) {
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+        ironGeneratorTaskIds.clear();
+    }
+
+    private void spawnIronAtGenerator(Location location) {
+        World world = location.getWorld();
+        if (world != null) {
+            ItemStack ironItem = new ItemStack(Material.IRON_INGOT);
+            Item iron = world.dropItemNaturally(location, ironItem);
+            iron.setPickupDelay(10);
+        }
+    }
+
+    private void startGoldGenerator(String generatorIdentifier, Location location) {
+        if (goldGeneratorTaskIds.containsKey(generatorIdentifier)) {
+            int taskId = goldGeneratorTaskIds.get(generatorIdentifier);
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+
+        int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(
+                this.bedWars,
+                () -> spawnGoldAtGenerator(location),
+                0L,
+                20L * 9
+        );
+        goldGeneratorTaskIds.put(generatorIdentifier, taskId);
+    }
+
+    public void stopGoldGenerators() {
+        for (Integer taskId : goldGeneratorTaskIds.values()) {
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+        goldGeneratorTaskIds.clear();
+    }
+
+    private void spawnGoldAtGenerator(Location location) {
+        World world = location.getWorld();
+        if (world != null) {
+            ItemStack goldItem = new ItemStack(Material.GOLD_INGOT);
+            Item gold = world.dropItemNaturally(location, goldItem);
+            gold.setPickupDelay(10);
+        }
+    }
+
+    private void startDiamondGenerator(String generatorIdentifier, Location location) {
+        if (diamondGeneratorTaskIds.containsKey(generatorIdentifier)) {
+            int taskId = diamondGeneratorTaskIds.get(generatorIdentifier);
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+
+        int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(
+                this.bedWars,
+                () -> spawnDiamondAtGenerator(location),
+                0L,
+                20L * 9
+        );
+        diamondGeneratorTaskIds.put(generatorIdentifier, taskId);
+    }
+
+    public void stopDiamondGenerators() {
+        for (Integer taskId : diamondGeneratorTaskIds.values()) {
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+        diamondGeneratorTaskIds.clear();
+    }
+
+    private void spawnDiamondAtGenerator(Location location) {
+        World world = location.getWorld();
+        if (world != null) {
+            ItemStack diamondItem = new ItemStack(Material.DIAMOND);
+            Item diamond = world.dropItemNaturally(location, diamondItem);
+            diamond.setPickupDelay(10);
+        }
+    }
+
+    private void startEmeraldGenerator(String generatorIdentifier, Location location) {
+        if (emeraldGeneratorTaskIds.containsKey(generatorIdentifier)) {
+            int taskId = emeraldGeneratorTaskIds.get(generatorIdentifier);
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+
+        int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(
+                this.bedWars,
+                () -> spawnEmeraldAtGenerator(location),
+                0L,
+                20L * 9
+        );
+        emeraldGeneratorTaskIds.put(generatorIdentifier, taskId);
+    }
+
+    public void stopEmeraldGenerators() {
+        for (Integer taskId : emeraldGeneratorTaskIds.values()) {
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+        emeraldGeneratorTaskIds.clear();
+    }
+
+    private void spawnEmeraldAtGenerator(Location location) {
+        World world = location.getWorld();
+        if (world != null) {
+            ItemStack emeraldItem = new ItemStack(Material.EMERALD);
+            Item emerald = world.dropItemNaturally(location, emeraldItem);
+            emerald.setPickupDelay(10);
         }
     }
 
@@ -165,6 +357,7 @@ public class BedWarsGame extends GameListener {
             Bukkit.getScheduler().scheduleSyncDelayedTask(bedWars, new Runnable() {
                 public void run() {
                     player.setGameMode(GameMode.SURVIVAL);
+                    onSpawn(player);
                     player.teleport(game.getSpawnManager().getPlayerSpawn(team));
                 }
             }, 100L);
@@ -182,12 +375,44 @@ public class BedWarsGame extends GameListener {
     }
 
     public boolean destroyBed(Team team, Player player) {
-        if (game.getTeams().get(player.getUniqueId()) == team) {
-             return true;
+        Team playerTeam = game.getTeams().get(player.getUniqueId());
+        if (playerTeam == team) {
+            return true;
         }
-        game.sendMessage(player.getName() + " has broken " + team.getName() + "'s bed!");
+
+        Location bedLocation = game.getSpawnManager().getBedSpawn(team);
+
+        if (bedLocation != null) {
+            bedLocation.getBlock().setType(Material.AIR);
+        }
+
+        ChatColor teamColor = playerTeam.getChatColor();
+        String coloredPlayerName = teamColor + player.getName();
+
+        game.sendMessage(ChatColor.BOLD + "BED DESTRUCTION > " + team.getChatColor() + team.getName() + " Bed" + ChatColor.GRAY + " was destroyed by " + coloredPlayerName + ChatColor.GRAY + "!");
         game.getBedsAlive().put(team, false);
+        game.getScoreBoardManager().updateScoreboardAfterBedDestruction(team);
+
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            onlinePlayer.playSound(onlinePlayer.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0F, 1.0F);
+        }
+
         return false;
+    }
+
+    public void resetBeds() {
+        bedLocations.forEach(loc -> loc.getBlock().setType(Material.AIR));
+        bedLocations.clear();
+    }
+
+    public void onSpawn(Player player) {
+        player.getInventory().clear();
+        player.closeInventory();
+        player.setGameMode(GameMode.SURVIVAL);
+        player.getInventory().addItem(new ItemStack(Material.WOODEN_SWORD));
+        player.getInventory().addItem(new ItemStack(Material.WHITE_WOOL, 64));
+        player.setHealth(20);
+        player.setFoodLevel(20);
     }
 
     private Material getBedMaterialByTeam(Team team) {

@@ -5,19 +5,23 @@ import me.simonfoy.bedwars.GameState;
 import me.simonfoy.bedwars.manager.ScoreboardManager;
 import me.simonfoy.bedwars.manager.SpawnManager;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Game {
 
     private BedWars bedWars;
+
+    private Set<Location> blocksPlaced;
+    private Set<BlockState> blocksDestroyed;
     private Location hub;
     private Location spawn;
     private GameState state;
@@ -36,8 +40,10 @@ public class Game {
 
     public Game(BedWars bedWars) {
         this.bedWars = bedWars;
-        this.hub = new Location(Bukkit.getWorld("world"), 0, 70, 0);
-        this.spawn = new Location(Bukkit.getWorld("world"), 0, 250, 0);
+        this.blocksPlaced = new HashSet<>();
+        this.blocksDestroyed = new HashSet<>();
+        this.hub = new Location(Bukkit.getWorld("world"), 0, 55, 0);
+        this.spawn = new Location(Bukkit.getWorld("world"), 0, 55, 0);
         this.state = GameState.PREPARING;
         this.players = new ArrayList<>();
         this.requiredPlayers = 8;
@@ -59,6 +65,17 @@ public class Game {
         if (state != GameState.PREPARING && state != GameState.PRE_START) {
             return;
         }
+        Bukkit.getWorld("world").getEntities().clear();
+
+        World world = Bukkit.getWorld("world");
+        if (world != null) {
+            for (Entity entity : world.getEntities()) {
+                if (entity instanceof Item) {
+                    entity.remove();
+                }
+            }
+        }
+
         bedWarsGame.start();
         setState(GameState.IN_PROGRESS);
 
@@ -90,20 +107,49 @@ public class Game {
     }
 
     public void reset(boolean removePlayers) {
+        List<UUID> currentPlayers = new ArrayList<>(players);
+
         if (removePlayers) {
             for (UUID uuid : players) {
                 Player player = Bukkit.getPlayer(uuid);
-                player.teleport(hub);
+                if (player != null) {
+                    player.teleport(hub);
+                }
             }
             players.clear();
+            alive.clear();
         }
+
+        bedWarsGame.stopIronGenerators();
+        bedWarsGame.stopGoldGenerators();
+        bedWarsGame.stopDiamondGenerators();
+        bedWarsGame.stopEmeraldGenerators();
+
+        bedWarsGame.resetBeds();
+        getTeams().clear();
+        Bukkit.getWorld("world").getEntities().clear();
+        resetChangedBlocks();
         sendTitle("", "");
         bedWarsGame.unregister();
         setState(GameState.PREPARING);
 
-        for (Player players : Bukkit.getOnlinePlayers()) {
-            getScoreBoardManager().clearScoreboard(players);
-            getScoreBoardManager().setupGamePreparingScoreboard(players);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (currentPlayers.contains(player.getUniqueId())) {
+                players.add(player.getUniqueId());
+                getScoreBoardManager().clearScoreboard(player);
+                getScoreBoardManager().setupGamePreparingScoreboard(player);
+
+                player.setGameMode(GameMode.ADVENTURE);
+                player.setHealth(20);
+                player.setFoodLevel(20);
+                player.teleport(spawn);
+                player.closeInventory();
+                player.getInventory().clear();
+
+                for (Player players : Bukkit.getOnlinePlayers()) {
+                    getScoreBoardManager().updatePlayerCounter();
+                }
+            }
         }
 
         if (countdown.isRunning()) {
@@ -115,9 +161,15 @@ public class Game {
         }
 
         cancelTasks();
+        Bukkit.getWorld("world").getEntities().clear();
         countdown = new Countdown(bedWars, this);
         gameTimer = new GameTimer(bedWars, this);
         bedWarsGame = new BedWarsGame(bedWars, this);
+
+        if (players.size() >= requiredPlayers) {
+            countdown.start();
+            setState(GameState.PRE_START);
+        }
     }
 
     /* UTILITIES */
@@ -156,6 +208,19 @@ public class Game {
         for (BukkitTask task : tasks) {
             task.cancel();
         }
+    }
+
+    public void resetChangedBlocks() {
+        blocksPlaced.forEach(loc -> loc.getBlock().setType(Material.AIR));
+
+        blocksDestroyed.forEach(blockState -> {
+            Block block = blockState.getWorld().getBlockAt(blockState.getLocation());
+            block.setType(blockState.getType(), false);
+            block.setBlockData(blockState.getBlockData(), false);
+        });
+
+        blocksPlaced.clear();
+        blocksDestroyed.clear();
     }
 
     /* PLAYER LOGIC */
@@ -209,6 +274,8 @@ public class Game {
         }
     }
 
+    public Set<Location> getBlocksPlaced() { return blocksPlaced; }
+    public Set<BlockState> getBlocksDestroyed() { return blocksDestroyed; }
     public Location getSpawn() { return spawn; }
     public GameState getState() { return state; }
     public List<UUID> getPlayers() { return players; }
