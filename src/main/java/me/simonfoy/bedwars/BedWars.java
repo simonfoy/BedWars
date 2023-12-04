@@ -4,6 +4,7 @@ import me.simonfoy.bedwars.commands.GameCommand;
 import me.simonfoy.bedwars.instance.Game;
 import me.simonfoy.bedwars.listener.ConnectListener;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class BedWars extends JavaPlugin {
@@ -12,6 +13,11 @@ public final class BedWars extends JavaPlugin {
 
     @Override
     public void onEnable() {
+
+        for (World world : Bukkit.getWorlds()) {
+            world.setGameRuleValue("announceAdvancements", "false");
+        }
+
         saveDefaultConfig();
 
         game = new Game(this);
