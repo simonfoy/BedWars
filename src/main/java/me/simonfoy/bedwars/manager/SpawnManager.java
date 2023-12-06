@@ -16,6 +16,8 @@ public class SpawnManager {
 
     private HashMap<Team, Location> teamSpawns;
     private HashMap<Team, BedLocation> bedSpawns;
+    private HashMap<Team, Location> soloUpgradeSpawns;
+    private HashMap<Team, Location> itemShopSpawns;
     private HashMap<Team, Location> ironGeneratorSpawns;
     private HashMap<Team, Location> goldGeneratorSpawns;
     private HashMap<Team, Location> diamondGeneratorSpawns;
@@ -26,6 +28,8 @@ public class SpawnManager {
         this.bedWars = bedWars;
         this.teamSpawns = new HashMap<>();
         this.bedSpawns = new HashMap<>();
+        this.soloUpgradeSpawns = new HashMap<>();
+        this.itemShopSpawns = new HashMap<>();
         this.ironGeneratorSpawns = new HashMap<>();
         this.goldGeneratorSpawns = new HashMap<>();
         this.diamondGeneratorSpawns = new HashMap<>();
@@ -37,6 +41,8 @@ public class SpawnManager {
         FileConfiguration config = bedWars.getConfig();
         loadSpecificSpawns(config, "playerSpawns", teamSpawns);
         loadSpecificSpawns(config, "bedSpawns", bedSpawns);
+        loadSpecificSpawns(config, "soloUpgradeSpawns", soloUpgradeSpawns);
+        loadSpecificSpawns(config, "itemShopSpawns", itemShopSpawns);
         loadSpecificSpawns(config, "ironGeneratorSpawns", ironGeneratorSpawns);
         loadSpecificSpawns(config, "goldGeneratorSpawns", goldGeneratorSpawns);
         loadSpecificSpawns(config, "diamondGeneratorSpawns", diamondGeneratorSpawns);
@@ -70,9 +76,11 @@ public class SpawnManager {
         float yaw = 0.0f;
         float pitch = 0.0f;
 
-        if (parts.length >= 6) {
+        if (parts.length == 6) {
             yaw = Float.parseFloat(parts[4]);
             pitch = Float.parseFloat(parts[5]);
+        } else if (parts.length != 4) {
+            return null;
         }
 
         return new Location(world, x, y, z, yaw, pitch);
@@ -95,6 +103,13 @@ public class SpawnManager {
 
     public BedLocation getBedSpawn(Team team) {
         return bedSpawns.get(team);
+    }
+    public Location getSoloUpgradeSpawn(Team team) {
+        return soloUpgradeSpawns.get(team);
+    }
+
+    public Location getItemShopSpawn(Team team) {
+        return itemShopSpawns.get(team);
     }
 
     public Location getIronGeneratorSpawn(Team team) {

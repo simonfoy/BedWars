@@ -1,11 +1,23 @@
 package me.simonfoy.bedwars.instance;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import me.simonfoy.bedwars.BedWars;
 import me.simonfoy.bedwars.GameState;
+import net.minecraft.network.protocol.game.ClientboundAddPlayerPacket;
+import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundRotateHeadPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.type.Bed;
+import org.bukkit.craftbukkit.v1_20_R1.entity.CraftPlayer;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -133,6 +145,18 @@ public class BedWarsGame extends GameListener {
                     startEmeraldGenerator(teamIdentifier, emeraldGeneratorLocation);
                 }
             }
+
+            Player representativePlayer = getFirstPlayerInTeam(team);
+            if (representativePlayer != null) {
+                Location soloUpgradeLocation = game.getSpawnManager().getSoloUpgradeSpawn(team);
+                if (soloUpgradeLocation != null) {
+                    spawnTeamNPC(soloUpgradeLocation, "Upgrades", representativePlayer);
+                }
+                Location itemShopLocation = game.getSpawnManager().getItemShopSpawn(team);
+                if (itemShopLocation != null) {
+                    spawnTeamNPC(itemShopLocation, "Shops", representativePlayer);
+                }
+            }
         }
         Bukkit.getWorld("world").setTime(1000);
         game.getGameTimer().start();
@@ -221,6 +245,53 @@ public class BedWarsGame extends GameListener {
         } else {
             event.setCancelled(true);
         }
+    }
+
+    private void spawnTeamNPC(Location location, String name, Player player) {
+        if (player == null) {
+            return;
+        }
+
+        CraftPlayer craftPlayer = (CraftPlayer) player;
+        ServerPlayer serverPlayer = craftPlayer.getHandle();
+
+        GameProfile npcProfile = new GameProfile(UUID.randomUUID(), name + "NPC");
+        npcProfile.getProperties().put("textures", new Property("textures",
+                "ewogICJ0aW1lc3RhbXAiIDogMTcwMTczOTI0MjIyMiwKICAicHJvZmlsZUlkIiA6ICI4NmRlYmE5ZjBjNTI0MTA0YWFkMjUyOTdhMTAzNjFmNCIsCiAgInByb2ZpbGVOYW1lIiA6ICJFc2hlSG9yY2hhdGEiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZmNhMjZjMjg2YjY4MjQ1NWNkNzA0MjJiMTMwODUzYzI5NmY3OWExZjVlY2YwZWMyOWI4MWNkZmVhYTBkZDYwIgogICAgfQogIH0KfQ==",
+                "fLULRbzVdk52aTd9GUQqs0pg0q13aQKVrXK9GNY7Ac5z8InIQI0gWxuA6FvCi2HNLSJl9NzgveXzUMHFzEKSYmssKb/FaTclxrZQSeJ0mb7lqn4RfeWyarSUI0l/GJsN14sSR5G40m5tnyD/3J7cCp4j7uPiUQvZR3iMGrE7TEICBXO39fGn7WC1KH4mFoBAREXmPxJViWQwWD9vVFQYG78kbbPqIBXnDYXOR7J9P/XQ3jsPURq1qPXDOlGqn6zuwtNOdgwx8cG/dnJrwRcCV3CGeSidSirAx1SM//XsBoEyRKY7zu8M8IynDdnLMsPPQGpCyJT/EzZNjoFH+5WSZ6tYZ1LeKuRCpgvFW9ZKEbXxwfIuhpfEUMJG7an8R3Je32pGOEIj3edc37CccqvynE8Modmv1hmdNDgI2303pgjfNwbbenDRqIl5zMulYRwvLpTFAgZyMiW1GSwg+S3K2YD6wUINOaVhX/LwvmJb4+ciLb5J86vmWdPs8YL4PtoD0smppWz+F/S6TUaZSTy4VICOocJEPyvYjRZpaFIz2BQk7p6d4pLuJugVttCakRafuqSbkdIy7jugSAhMLI2kTifRseHfK57QHBwrn3VfjBEfXU9LRkKa0xwqXM5j897/vVnLNTowwcA4SuqIHfc9ppEM+vwuKDW0KToSzMK287I="));
+
+        ServerPlayer npc = new ServerPlayer(serverPlayer.getServer(),
+                serverPlayer.serverLevel().getLevel(), npcProfile);
+        npc.setPos(location.getX(), location.getY(), location.getZ());
+
+        ServerGamePacketListenerImpl connection = serverPlayer.connection;
+
+        connection.send(new ClientboundPlayerInfoUpdatePacket(
+                ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, npc));
+        connection.send(new ClientboundAddPlayerPacket(npc));
+
+        SynchedEntityData data = npc.getEntityData();
+        byte bitmask = (byte) (0x01 | 0x04 | 0x08 | 0x10 | 0x20);
+        data.set(new EntityDataAccessor<>(17, EntityDataSerializers.BYTE), bitmask);
+
+        float yaw = serverPlayer.getYRot();
+        float pitch = serverPlayer.getXRot();
+        connection.send(new ClientboundRotateHeadPacket(npc,
+                (byte) ((yaw % 360.0F) * 256.0F / 360.0F)));
+        connection.send(new ClientboundMoveEntityPacket.Rot(
+                npc.getBukkitEntity().getEntityId(),
+                (byte) ((yaw % 360.0F) * 256.0F / 360.0F),
+                (byte) ((pitch % 360.0F) * 256.0F / 360.0F),
+                true));
+    }
+
+    private Player getFirstPlayerInTeam(Team team) {
+        for (UUID uuid : game.getPlayers()) {
+            if (game.getTeams().get(uuid) == team) {
+                return Bukkit.getPlayer(uuid);
+            }
+        }
+        return null;
     }
 
     private void startIronGenerator(String generatorIdentifier, Location location) {

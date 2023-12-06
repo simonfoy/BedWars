@@ -4,3 +4,4 @@ main: me.simonfoy.bedwars.BedWars
 api-version: '1.20'
 commands:
   game:
+  npc:
